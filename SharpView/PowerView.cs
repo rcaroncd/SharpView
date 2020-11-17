@@ -29,6 +29,47 @@ namespace SharpView
             Logger.Write_Verbose("Called TestMethod!");
         }
 
+        public static IEnumerable<object> Get_ExecutionGroups(Args_Get_ExecutionGroups argsExecutionGroups = null)
+        {
+            IEnumerable<object> result = null;
+
+            // Se obtiene una lista de ordenadores
+            Args_Get_DomainComputer argsComputers = new Args_Get_DomainComputer{ };
+            IEnumerable<object> computers = Get_NetComputer(argsComputers);
+            
+            // Se añade cada ordenador al argumento de ordenadores en los que se buscaran los grupos
+            List<string> computersGroup = new List<string>();
+            foreach (LDAPProperty computer in computers)
+            {
+                computersGroup.Add(computer.name);
+            }
+
+            // Se buscan los grupos en cada ordenador
+            Args_Get_NetLocalGroupMember argsGroups = new Args_Get_NetLocalGroupMember{ };
+            argsGroups.ComputerName = computersGroup.ToArray();
+            argsGroups.GroupName = argsExecutionGroups.GroupName;
+            IEnumerable<object> members = Get_NetLocalGroupMember(argsGroups);
+
+            // Se itera por cada resultado y se extrae aquellos que coinciden con los del usuario introducido o por defecto todos
+            var ExecutionGroupMembers = new List<object>();
+            if (argsExecutionGroups.MemberName!=null)
+            {
+                foreach (LocalGroupMemberAPI member in members)
+                {
+                    if (argsExecutionGroups.MemberName.Equals(member.MemberName))
+                    {
+                        ExecutionGroupMembers.Add(member);
+                    }
+                }
+                result = ExecutionGroupMembers;
+            } else
+            {
+                result = members;
+            }
+            
+            return result;
+        }
+
         private static System.DirectoryServices.DirectorySearcher Get_DomainSearcher(Args_Get_DomainSearcher args = null)
         {
             if (args == null) args = new Args_Get_DomainSearcher();
@@ -7156,8 +7197,10 @@ namespace SharpView
                     var TotalRead = 0;
                     var ResumeHandle = IntPtr.Zero;
 
+
                     // get the local user information
                     var Result = NativeMethods.NetLocalGroupGetMembers(Computer, args.GroupName, QueryLevel, out PtrInfo, -1, out EntriesRead, out TotalRead, ResumeHandle);
+
 
                     // locate the offset of the initial intPtr
                     var Offset = PtrInfo.ToInt64();
@@ -7167,6 +7210,7 @@ namespace SharpView
                     // 0 = success
                     if ((Result == 0) && (Offset > 0))
                     {
+
                         // Work out how much to increment the pointer by finding out the size of the structure
                         var Increment = Marshal.SizeOf(typeof(LOCALGROUP_MEMBERS_INFO_2));
 
@@ -7206,8 +7250,10 @@ namespace SharpView
                         NativeMethods.NetApiBufferFree(PtrInfo);
 
                         // try to extract out the machine SID by using the -500 account as a reference
-                        var MachineSid = (Members.FirstOrDefault(x => (x as LocalGroupMemberAPI).SID.IsRegexMatch(".*-500") || (x as LocalGroupMemberAPI).SID.IsRegexMatch(".*-501")) as LocalGroupMemberAPI).SID;
-                        if (MachineSid != null)
+                        //var MachineSid = (Members.FirstOrDefault(x => (x as LocalGroupMemberAPI).SID.IsRegexMatch(".*-500") || (x as LocalGroupMemberAPI).SID.IsRegexMatch(".*-501")) as LocalGroupMemberAPI).SID;
+                        var MachineSid = "";
+                        //if (MachineSid != null)
+                        if (false)
                         {
                             MachineSid = MachineSid.Substring(0, MachineSid.LastIndexOf('-'));
 
@@ -7246,6 +7292,7 @@ namespace SharpView
                 }
                 else
                 {
+
                     // otherwise we're using the WinNT service provider
                     try
                     {
@@ -7940,7 +7987,7 @@ namespace SharpView
             CSVWriter.Dispose();
             CSVStream.Dispose();
         }
-        
+
         // the host enumeration block we're using to enumerate all servers
         private static IEnumerable<string> _Find_LocalAdminAccess(string[] ComputerName, IntPtr TokenHandle)
         {
@@ -7959,16 +8006,19 @@ namespace SharpView
             foreach (var TargetComputer in ComputerName)
             {
                 var Up = TestConnection.Ping(TargetComputer, 1);
-                if (Up) {
+                if (Up)
+                {
                     // check if the current user has local admin access to this server
                     var Access = Test_AdminAccess(new Args_Test_AdminAccess { ComputerName = new[] { TargetComputer } }).FirstOrDefault();
-                    if (Access != null && Access.IsAdmin) {
+                    if (Access != null && Access.IsAdmin)
+                    {
                         TargetComputers.Add(TargetComputer);
                     }
                 }
             }
 
-            if (TokenHandle != IntPtr.Zero) {
+            if (TokenHandle != IntPtr.Zero)
+            {
                 Invoke_RevertToSelf(LogonToken);
             }
             return TargetComputers;
@@ -8084,7 +8134,8 @@ namespace SharpView
         private static IEnumerable<object> _Find_DomainLocalGroupMember(string[] ComputerName, string GroupName, MethodType Method, IntPtr TokenHandle)
         {
             // Add check if user defaults to/selects "Administrators"
-            if (GroupName == "Administrators") {
+            if (GroupName == "Administrators")
+            {
                 var AdminSecurityIdentifier = new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
                 GroupName = AdminSecurityIdentifier.Translate(typeof(System.Security.Principal.NTAccount)).Value.Split('\\').LastOrDefault();
             }
@@ -9192,12 +9243,14 @@ namespace SharpView
         private static bool Test_Write(string Path)
         {
             // short helper to check is the current user can write to a file
-            try {
+            try
+            {
                 var Filetest = File.OpenWrite(Path);
                 Filetest.Close();
                 return true;
             }
-            catch {
+            catch
+            {
                 return false;
             }
         }
@@ -9273,10 +9326,11 @@ namespace SharpView
                         String owner;
                         try
                         {
-                             owner = File.GetAccessControl(file).GetOwner(typeof(SecurityIdentifier)).Translate(typeof(System.Security.Principal.NTAccount)).Value;
+                            owner = File.GetAccessControl(file).GetOwner(typeof(SecurityIdentifier)).Translate(typeof(System.Security.Principal.NTAccount)).Value;
                         }
-                        catch{
-                             owner = "Access was Denied"; 
+                        catch
+                        {
+                            owner = "Access was Denied";
                         }
 
                         DateTime lastAccessTime;
@@ -9290,20 +9344,23 @@ namespace SharpView
                         try
                         {
                             lastWriteTime = File.GetLastWriteTime(file);
-                        } catch { lastWriteTime = new DateTime(); }
+                        }
+                        catch { lastWriteTime = new DateTime(); }
 
                         DateTime creationTime;
                         try
                         {
                             creationTime = File.GetCreationTime(file);
-                        } catch { creationTime = new DateTime(); }
+                        }
+                        catch { creationTime = new DateTime(); }
 
                         long length;
                         try
                         {
-                            length =new FileInfo(file).Length; 
-                        }catch { length = 0; }
-                      
+                            length = new FileInfo(file).Length;
+                        }
+                        catch { length = 0; }
+
 
                         var FoundFile = new FoundFile
                         {
@@ -9388,29 +9445,36 @@ namespace SharpView
                     }
                 }
 
-                foreach (var Share in SearchShares) {
+                foreach (var Share in SearchShares)
+                {
                     Logger.Write_Verbose($@"Searching share: {Share}");
                     var SearchArgs = new Args_Find_InterestingFile
                     {
                         Path = new[] { Share },
                         Include = Include
                     };
-                    if (OfficeDocs) {
+                    if (OfficeDocs)
+                    {
                         SearchArgs.OfficeDocs = OfficeDocs;
                     }
-                    if (FreshEXEs) {
+                    if (FreshEXEs)
+                    {
                         SearchArgs.FreshEXEs = FreshEXEs;
                     }
-                    if (LastAccessTime != null) {
+                    if (LastAccessTime != null)
+                    {
                         SearchArgs.LastAccessTime = LastAccessTime;
                     }
-                    if (LastWriteTime != null) {
+                    if (LastWriteTime != null)
+                    {
                         SearchArgs.LastWriteTime = LastWriteTime;
                     }
-                    if (CreationTime != null) {
+                    if (CreationTime != null)
+                    {
                         SearchArgs.CreationTime = CreationTime;
                     }
-                    if (CheckWriteAccess) {
+                    if (CheckWriteAccess)
+                    {
                         SearchArgs.CheckWriteAccess = CheckWriteAccess;
                     }
                     FoundFiles.AddRange(Find_InterestingFile(SearchArgs));

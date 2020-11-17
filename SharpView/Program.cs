@@ -14,7 +14,7 @@ namespace SharpView
 {
     class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             if (args.Length == 0)
             {
@@ -414,6 +414,9 @@ namespace SharpView
                     break;
                 case "get-netgpogroup":
                     methodName = "Get_NetGPOGroup";
+                    break;
+                case "get-executiongroups":
+                    methodName = "Get_ExecutionGroups";
                     break;
                 default:
                     Console.WriteLine("No Valid Method entered");

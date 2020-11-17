@@ -55,6 +55,27 @@
   <PropertyGroup>
     <StartupObject>SharpView.Program</StartupObject>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="PCRE.NET, Version=0.7.0.0, Culture=neutral, PublicKeyToken=8f58d558eeff25a3, processorArchitecture=MSIL">
       <HintPath>..\packages\PCRE.NET.0.7.0\lib\net45\PCRE.NET.dll</HintPath>
@@ -152,6 +173,7 @@
     <Compile Include="Arguments\Args_Get_DomainUserEvent.cs" />
     <Compile Include="Arguments\Args_Get_ForestGlobalCatalog.cs" />
     <Compile Include="Arguments\Args_Get_ForestDomain.cs" />
+    <Compile Include="Arguments\Args_Get_ExecutionGroups.cs" />
     <Compile Include="Enums\LogonType.cs" />
     <Compile Include="Enums\ClassType.cs" />
     <Compile Include="Enums\SPNTicketFormat.cs" />
