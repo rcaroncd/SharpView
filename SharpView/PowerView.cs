@@ -50,7 +50,7 @@ namespace SharpView
             argsGroups.GroupName = argsExecutionGroups.GroupName;
             IEnumerable<object> members = Get_NetLocalGroupMember(argsGroups);
 
-            // Se itera por cada resultado y se extrae aquellos que coinciden con los del usuario introducido o por defecto todos
+            // Se itera por cada resultado y se extrae aquellos que coinciden con los del usuario introducido o, por defecto, todos
             var ExecutionGroupMembers = new List<object>();
             if (argsExecutionGroups.MemberName!=null)
             {
@@ -69,6 +69,120 @@ namespace SharpView
             
             return result;
         }
+
+        public static IEnumerable<object> Find_EntityHasFullControl(Args_Find_EntityHasFullControl argsEntityFullControl = null)
+        {
+            IEnumerable<object> result = null;
+
+            // Se obtiene una lista de ACLs
+            Args_Find_InterestingDomainAcl argsDomainAcl = new Args_Find_InterestingDomainAcl { };
+            argsDomainAcl.Domain = argsEntityFullControl.Domain;
+            argsDomainAcl.DomainName = argsEntityFullControl.DomainName;
+            argsDomainAcl.Name = argsEntityFullControl.Name;
+            argsDomainAcl.ResolveGUIDs = argsEntityFullControl.ResolveGUIDs;
+            argsDomainAcl.RightsFilter = argsEntityFullControl.RightsFilter;
+            argsDomainAcl.LDAPFilter = argsEntityFullControl.LDAPFilter;
+            argsDomainAcl.Filter = argsEntityFullControl.Filter;
+            argsDomainAcl.SearchBase = argsEntityFullControl.SearchBase;
+            argsDomainAcl.ADSPath = argsEntityFullControl.ADSPath;
+            argsDomainAcl.Server = argsEntityFullControl.Server;
+            argsDomainAcl.DomainController = argsEntityFullControl.DomainController;
+            argsDomainAcl.SearchScope = argsEntityFullControl.SearchScope;
+            argsDomainAcl.ResultPageSize = argsEntityFullControl.ResultPageSize;
+            argsDomainAcl.ServerTimeLimit = argsEntityFullControl.ServerTimeLimit;
+            argsDomainAcl.Tombstone = argsEntityFullControl.Tombstone;
+            argsDomainAcl.Credential = argsEntityFullControl.Credential;
+            IEnumerable<object> acls = Find_InterestingDomainAcl(argsDomainAcl);
+
+            // Se itera por cada resultado y se extrae aquellas ACL cuya entidad referenciada coincide con la introducida o, por defecto, todas
+            var EntitiesWithFullControl = new List<object>();
+            if (argsEntityFullControl.Entity != null)
+            {
+                foreach (ACL acl in acls)
+                {
+                    if (argsEntityFullControl.Entity.Equals(acl.IdentityReferenceName))
+                    {
+                        EntitiesWithFullControl.Add(acl);
+                    }
+                }
+                result = EntitiesWithFullControl;
+            }
+            else
+            {
+                result = acls;
+            }
+
+            return result;
+        }
+
+        public static IEnumerable<object> Get_RemoteSessions(Args_Get_RemoteSessions argsRemoteSessions = null)
+        {
+            IEnumerable<object> result = null;
+
+            // Se obtiene una lista de ordenadores
+            Args_Get_DomainComputer argsComputers = new Args_Get_DomainComputer { };
+            argsComputers.OperatingSystem = argsRemoteSessions.OperatingSystem;
+            argsComputers.ServicePack = argsRemoteSessions.ServicePack;
+            argsComputers.Unconstrained = argsRemoteSessions.Unconstrained;
+            argsComputers.TrustedToAuth = argsRemoteSessions.TrustedToAuth;
+            argsComputers.Ping = argsRemoteSessions.Ping;
+            argsComputers.Domain = argsRemoteSessions.Domain;
+            argsComputers.SPN = argsRemoteSessions.SPN;
+            IEnumerable<object> computers = Get_NetComputer(argsComputers);
+
+            // Se añade cada ordenador al argumento de ordenadores en los que se buscaran las sesiones
+            List<string> computersGroup = new List<string>();
+            foreach (LDAPProperty computer in computers)
+            {
+                computersGroup.Add(computer.name);
+            }
+
+            // Se buscan las sesiones en cada ordenador
+            Args_Get_NetRDPSession argsSession = new Args_Get_NetRDPSession { };
+            argsSession.ComputerName = computersGroup.ToArray();
+            IEnumerable<object> sessions = Get_NetRDPSession(argsSession);
+
+            // Se itera por cada resultado y se extrae aquellos que coinciden con los del usuario introducido o, por defecto, todos
+            var ExecutionGroupMembers = new List<object>();
+
+            // Si no hay parametros para filtrar se retorna el resultado original
+            if (
+                argsRemoteSessions.UserName == null &&
+                argsRemoteSessions.SessionName == null &&
+                argsRemoteSessions.SessionState == null &&
+                argsRemoteSessions.SessionID == null
+            )
+            {
+                result = sessions;
+                return result;
+            }
+
+            // Si se especifican argumentos de filtrado, se aplican en el siguiente orden de prioridad
+            foreach (RDPSessionInfo session in sessions)
+            {
+                if (argsRemoteSessions.UserName != null && !argsRemoteSessions.UserName.Contains(session.UserName))
+                {
+                    continue;
+                } 
+                if (argsRemoteSessions.SessionState != null && !argsRemoteSessions.SessionState.Contains(session.State.ToString()))
+                {
+                    continue;
+                }
+                if (argsRemoteSessions.SessionID != null && !argsRemoteSessions.SessionID.Contains(session.ID))
+                {
+                    continue;
+                }
+                if (argsRemoteSessions.SessionName != null && !argsRemoteSessions.SessionName.Contains(session.SessionName))
+                {
+                    continue;
+                }
+                ExecutionGroupMembers.Add(session);
+            }
+            
+            result = ExecutionGroupMembers;
+            return result;
+        }
+
 
         private static System.DirectoryServices.DirectorySearcher Get_DomainSearcher(Args_Get_DomainSearcher args = null)
         {

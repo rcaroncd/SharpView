@@ -174,6 +174,8 @@
     <Compile Include="Arguments\Args_Get_ForestGlobalCatalog.cs" />
     <Compile Include="Arguments\Args_Get_ForestDomain.cs" />
     <Compile Include="Arguments\Args_Get_ExecutionGroups.cs" />
+    <Compile Include="Arguments\Args_Find_EntityHasFullControl.cs" />
+    <Compile Include="Arguments\Args_Get_RemoteSessions.cs" />
     <Compile Include="Enums\LogonType.cs" />
     <Compile Include="Enums\ClassType.cs" />
     <Compile Include="Enums\SPNTicketFormat.cs" />

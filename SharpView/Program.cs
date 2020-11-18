@@ -415,8 +415,15 @@ namespace SharpView
                 case "get-netgpogroup":
                     methodName = "Get_NetGPOGroup";
                     break;
+                // Custom Commands
                 case "get-executiongroups":
                     methodName = "Get_ExecutionGroups";
+                    break;
+                case "find-entityhasfullcontrol":
+                    methodName = "Find_EntityHasFullControl";
+                    break;
+                case "get-remotesessions":
+                    methodName = "Get_RemoteSessions";
                     break;
                 default:
                     Console.WriteLine("No Valid Method entered");
